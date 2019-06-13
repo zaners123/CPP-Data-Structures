@@ -4,7 +4,9 @@
 #include <functional>
 #include <memory>
 #include <fstream>
-
+#include <set>
+#include <map>
+//my great structures
 #include <structures.h>
 
 using namespace std;
@@ -241,7 +243,7 @@ void fiddleWithBinaryTreeMap() {
 	map.put(15,"Orange");
 //	map.print();
 	map.inOrder();
-	cout<<"Tree's value at 5: "<<*map.get(5)<<'\n';
+	cout<<"Tree's value at 5: "<<map.get(5)<<'\n';
 	cout<<"Tree's length: "<<map.getLength()<<'\n';
 	map.sortTree();
 }
@@ -696,10 +698,136 @@ void queueFIFO() {
 		cout<<"Head is "<<l.pop()<<'\n';
 	}
 }
+void heap() {
+	srand(13);
+	//min heap
+	Heap<int,int,MAX_HEAP> heap;
+	for (auto i = 0; i < 1000; ++i) {
+		int r = 0;
+		heap.put(r,r);
+	}
+	cout<<"Done putting\n";
+	while (!heap.isEmpty()) {
+		heap.pop();
+//		cout<<"POP "<<heap.pop()<<'\n';
+	}
+}
+
+vector<long double> fibCache {0,1};
+//fib(0) is 0
+//fib(1) is 1
+//fib(2) is 1
+//fib(3) is 2
+long double fib(long double i) {
+	long double ret = 0;
+	if (i < fibCache.size()) {
+		return fibCache.at(i);
+	} else {
+		ret = fib(i-2) + fib(i-1);
+		fibCache.push_back(ret);
+		return ret;
+	}
+}
+
+void redBlack() {
+	//todo get to work (has probly like 5 bugs)
+	RedBlackTree<int,string> tree;
+	tree.put(15,wordyNumber(15));
+	tree.put(5,wordyNumber(5));
+	tree.put(14,wordyNumber(14));
+	tree.printTree();
+}
+
+void fiddleSTD() {
+	vector<int> vect;
+	for (auto x = 0; x < 15; ++x) {
+		vect.push_back(x);
+	}
+
+	//increment every value in vector
+	auto i = vect.begin();
+	while (i != vect.end()) {
+		//if incrementing dereferenced pointers, use parenthesis to dereference then increment
+		(*i) ++;
+		i++;
+	}
+
+	//double every vector value testing for loop
+	for (auto v = vect.begin(); v != vect.end(); v++) {
+		(*v) *=2;
+	}
+
+
+	//note use of cbegin to cend for constant iteration (cant change vector)
+	auto it = vect.cbegin();
+	while (it != vect.cend()) {
+		cout<<*it<<' ';
+		it++;
+	}
+	cout<<'\n';
+
+
+	//main std::stdset
+
+	std::set<int> stdset = {1,2,3};
+	stdset.insert(15);
+	stdset.insert(1);
+	stdset.insert(41);
+	stdset.insert(8);
+
+	for (auto x : stdset) {
+		cout<<x<<' ';
+	}
+	cout<<'\n';
+
+	std::map<int,string> stdmap;
+	stdmap.insert(pair<int,string>(15,"Fifteen"));
+	stdmap.insert({10,"Ten"});
+	stdmap.insert({4,"Four"});
+	stdmap.insert({12,"Twelve"});
+	std::map<int,string>::const_iterator iter = stdmap.begin();
+	while (iter != stdmap.end()) {
+		cout<<iter->first<<'='<<iter->second<<' ';
+		iter++;
+	}
+	cout<<'\n';
+
+	//using std algorithms
+	iter = min_element(stdmap.begin(), stdmap.end());
+	cout<<"Min in the map: "<<iter->second<<'\n';
+	cout<<"Max in the map: "<<max_element(stdmap.begin(), stdmap.end())->second<<'\n';
+}
+
 int main() {
+	//todo make a kernel module (something simple like /dev/count that gives you a counter "0 1 2 3"...)
 	Timer t;
-	queueFIFO();
+
+
+	for (auto i = 1; i <= 100; ++i) {
+		cout<<'\n'<<i<<": "<<((i%15==0)?("FizzBuzz"):(i%3==0)?"Fizz":(i%5==0)?"Buzz":"");
+
+
+
+		/*if (i%15==0) cout<<i<<": FizzBuzz\n";
+		else if (i%5==0) cout<<i<<": Buzz\n";
+		else if (i%3==0) cout<<i<<": Fizz\n";*/
+	}
+
+
+	/*string out;
+	if (i%3==0) out+="Fizz";
+	if (i%5==0) out+="Buzz";
+	if (!out.empty())	cout<<i<<": "<<out<<'\n';*/
+
+
+
+	//fiddleSTD();
+	//redBlack();
+
+//	heap();
+	//queueFIFO();
 //	skipList();
+//	cout<<fib(144)<<'\n';
 //	cout<<"Lol Nice "<<l.get(420)<<'\n';
 	//leak();
 //	fiddleWithLinked();

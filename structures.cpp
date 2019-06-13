@@ -627,6 +627,12 @@ public:
 		removeNode(val, root);
 	}
 };
+/**Used for fancy printing of tree structure*/
+void indentOut(int indents) {
+	while (indents-- > 0) {
+		cout << "  ";
+	}
+}
 template <class K, class V> class BinaryTreeMap {
 private:
 	BinaryTreeMapNode<K,V> *root = nullptr;
@@ -703,12 +709,6 @@ private:
 		if (node->right != nullptr) removeSubTree(node->right);
 		delete node;
 	}
-	/**Used for fancy printing of tree structure*/
-	void indentOut(int indents) {
-		while (indents-- > 0) {
-			cout << "  ";
-		}
-	}
 
 	void printTree(int tabs, BinaryTreeMapNode<K,V> *node) {
 		indentOut(tabs);
@@ -775,18 +775,18 @@ public:
 			put(key, val, *root);
 		}
 	}
-	V* get(K key) {
+	V get(K key) {
 		auto node = root;
 		while (node) {
 			if (key == node->key) {
-				return &node->val;
+				return node->val;
 			} else if (key < node->key) {
 				node = node->left;
 			} else {
 				node = node->right;
 			}
 		}
-		return nullptr;
+		throw DoesNotContain("Does not contian that key");
 	}
 	void print() {
 		cout<<"Binary Tree \n-----------------------\n";
@@ -997,7 +997,7 @@ public:
 		 	if (node->val.first == k) {
 		 		return node->val.second;
 		 	}
-		    //i don't actually need a reinterpret_cast here, the IDE is just being an ass...
+		    //i don't actually need a reinterpret_cast here, the IDE is just...
 		    node = reinterpret_cast<LinkedNode<pair<Key, T>> *>(node->next);
 	    }
 		throw DoesNotContain("The HashMap does not contain it");
@@ -1021,7 +1021,7 @@ public:
 					datastore.at(index).removeNodeAfter(node);
 					return;
 				}
-				//i don't actually need a reinterpret_cast here, the IDE is just being an ass...
+				//i don't actually need a reinterpret_cast here, the IDE is just...
 				node = reinterpret_cast<LinkedNode<pair<Key, T>> *>(node->next);
 			}
 			throw DoesNotContain("The HashMap does not contain it");
@@ -1037,7 +1037,7 @@ public:
 			LinkedNode<pair<Key, T>>* node = list->root;
 			while (node) {
 				cout << "Key " << node->val.first << " -> " << node->val.second << "\n";
-				//i don't actually need a reinterpret_cast here, the IDE is just being an ass...
+				//i don't actually need a reinterpret_cast here, the IDE is just...
 				node = reinterpret_cast<LinkedNode<pair<Key, T>> *>(node->next);
 //				node = nullptr;
 			}
@@ -1154,7 +1154,7 @@ public:
 			}
 		}
 	}
-	/*void putWithLogging(const K& k, const V& val) {
+	/*void putWithLogging(const K& key, const V& val) {
 		auto thisHeight = generateHeight();
 		cout<<"\nPutting "<<val<<" with Height "<<thisHeight<<'\n';
 
@@ -1174,11 +1174,11 @@ public:
 		//find dropAfter, so you know when to drop
 		do {
 			cout<<"At level "<<currentLevel<<'\n';
-//			cout<<"\tComparing "<< *(dropAfter->right->key) << " and "<< k <<'\n';
+//			cout<<"\tComparing "<< *(dropAfter->right->key) << " and "<< key <<'\n';
 
 			//if the next value is null, you can't go any further
 			//if the node after you is bigger than you need to be
-			if (dropAfter->right == nullptr || *dropAfter->right->key > k) {
+			if (dropAfter->right == nullptr || *dropAfter->right->key > key) {
 				//if you can't go down any more, you're done
 				if (dropAfter->below == nullptr) {
 					cout<<"\tEND - Ended by finding spot"<<*dropAfter<<"\n";
@@ -1189,7 +1189,7 @@ public:
 				} else {
 					cout<<"\tDOWN - Going down because value after me ";
 					if (dropAfter->right== nullptr) {cout<<"NULL";} else {cout<<*dropAfter->right;}
-					cout<<" is null or more than "<<k<<"\n";
+					cout<<" is null or more than "<<key<<"\n";
 					//remember where yo went down
 					lastVisitedOnThatLevel.at(--currentLevel) = dropAfter;
 					cout<<"\t\tLast visited["<<currentLevel<<"] is "<<*dropAfter<<'\n';
@@ -1198,10 +1198,10 @@ public:
 					continue;
 				}
 			} else {
-				if (*dropAfter->right->key == k) {
+				if (*dropAfter->right->key == key) {
 					throw DuplicateKey("SkipList already contains that key");
 				}
-				cout<<"\tRIGHT - Going forward one because I'm less than the next value ("<<*(dropAfter->right->key)<<" <= "<<(k)<<"), passing "<<*(dropAfter->right->key)<<'\n';
+				cout<<"\tRIGHT - Going forward one because I'm less than the next value ("<<*(dropAfter->right->key)<<" <= "<<(key)<<"), passing "<<*(dropAfter->right->key)<<'\n';
 				//go forward one
 				dropAfter = dropAfter->right;
 			}
@@ -1221,7 +1221,7 @@ public:
 			}
 
 			//main insert this in each slot
-			Node* toInsert = new Node(k, val);
+			Node* toInsert = new Node(key, val);
 //			cout<<"node "<<toInsert<<'\n';
 //			toInsert = new Node(1,"15");
 			toInsert->right = insertAfter->right;
@@ -1359,8 +1359,343 @@ public:
 	}
 };
 
-//todo boolean template for min or max choice
-/**MinHeap is where the smallest value rises*/
-class MinHeap {
+
+const static bool MIN_HEAP = false;
+const static bool MAX_HEAP = true;
+/**MinHeap is where the smallest value rises
+ *
+ * Insert items  O(log(n))
+ * Pop           O(log(n))
+ * Peek          O(1)
+ *
+ * */
+template <class K, class V, bool maxHeap> class Heap {
+	using Node = std::pair<K,V>;
+	vector<Node> nodes;
+
+	//main index functions
+	inline bool hasParent(const size_t& node) {
+		return getParentIndex(node) != numeric_limits<size_t>::max();
+	}
+	inline bool hasLeftChild(const size_t& node) {
+		return getLeftChildIndex(node) < nodes.size();
+	}
+	inline bool hasChild(const size_t& node, bool rightChild) {
+		return rightChild?getRightChildIndex(node):getLeftChildIndex(node) < nodes.size();
+	}
+	inline bool hasRightChild(const size_t& node) {
+		return getRightChildIndex(node) < nodes.size();
+	}
+
+	inline size_t getParentIndex(const size_t& node) {
+		return (node+1)/2-1;
+	}
+	inline size_t getLeftChildIndex(const size_t& node) {
+		return (node+1)*2-1;
+	}
+	inline size_t getChildIndex(const size_t& node, bool rightChild) {
+		return rightChild?getRightChildIndex(node):getLeftChildIndex(node);
+	}
+	inline size_t getRightChildIndex(const size_t& node) {
+		return (node+1)*2;
+	}
+public:
+	Heap() = default;
+	void put(K key, V val) {
+		//grow array by 1
+		nodes.push_back(Node(key, val));
+		size_t nodeI = nodes.size()-1;
+		//while (has parent and parent is greater), go up the stack
+		while (hasParent(nodeI) && (maxHeap == nodes.at(getParentIndex(nodeI)).first < key)) {
+			//go up stack by swapping itself with its parent, then move index
+			swap(nodes.at(nodeI),nodes.at(getParentIndex(nodeI)));
+			nodeI = getParentIndex(nodeI);
+		}
+	}
+	bool isEmpty() {
+		return nodes.size()==0;
+	}
+	V peak() {
+		if (nodes.size()==0) throw DoesNotContain("Empty Heap has no nodes");
+		return nodes.at(0).second;
+	}
+	V pop() {
+		if (nodes.size()==0) throw DoesNotContain("Empty Heap has no nodes");
+		V ret = nodes.at(0).second;
+
+		//put last node at top, shrink by one, then restructure
+		nodes.at(0) = nodes.at(nodes.size()-1);
+		nodes.resize(nodes.size()-1);
+
+		size_t nodeI = 0;
+		do {
+			if (hasLeftChild(nodeI) && hasRightChild(nodeI)) {
+				bool chosenChild = maxHeap == (nodes.at(getLeftChildIndex(nodeI)) < nodes.at(getRightChildIndex(nodeI)));
+				//shift with least child (bring smallest up)
+				if (maxHeap == (nodes.at(getChildIndex(nodeI, chosenChild)) > nodes.at(nodeI))) {
+					swap(nodes.at(nodeI), nodes.at(getChildIndex(nodeI, chosenChild)));
+					nodeI = getChildIndex(nodeI, chosenChild);
+				} else {
+					break;
+				}
+			} else if (hasLeftChild(nodeI) && (maxHeap == nodes.at(getLeftChildIndex(nodeI)) > nodes.at(nodeI))) {
+				//swap with left (only) child if less
+				swap(nodes.at(nodeI), nodes.at(getLeftChildIndex(nodeI)));
+				nodeI = getLeftChildIndex(nodeI);
+
+				//main a node never has only a right child
+			} else {
+				//if it doesn't have any children, it's done moving
+				break;
+			}
+		} while (true);
+
+		return ret;
+	}
+};
+
+
+template <class K,class V> class RedBlackTreeNode {
+private:
+	RedBlackTreeNode* parent;
+	RedBlackTreeNode* left;
+	RedBlackTreeNode* right;
+public:
+	bool isRed;
+	K key;
+	V val;
+	RedBlackTreeNode(K key, V val, bool isRed) {
+		this->key = key;
+		this->val = val;
+		this->isRed = isRed;
+	}
+
+	bool isRightChild() {
+		return (getParent()->getRight() == this);
+	}
+	/**
+	 * @returns its sibling. This is it's parent's only other child. Sibling could be null. This function requires the parent to exist.
+	 * */
+	RedBlackTreeNode* getSibling() {
+		//assert it has a parent if this is called
+		assert (getParent());
+
+		if (isRightChild()) {
+			return getParent()->getLeft();
+		} else {
+			return getParent()->getRight();
+		}
+	}
+
+	void flipColor() {
+		isRed = !isRed;
+	}
+
+	//main all these constructors are used so node.left.parent is always equal to node
+	RedBlackTreeNode* getParent() {return parent;}
+	RedBlackTreeNode* getGrandparent() {
+		if (getParent() == nullptr) return nullptr;
+		return getParent()->getParent();
+	}
+	RedBlackTreeNode* getLeft() {return left;}
+	RedBlackTreeNode* getRight() {return right;}
+	RedBlackTreeNode* getChild(const bool& isRight) {
+		if (isRight) {
+			return getRight();
+		} else {
+			return getLeft();
+		}
+	}
+	RedBlackTreeNode* getUncle() {
+		return getParent()->getSibling();
+	}
+
+	void setLeft(RedBlackTreeNode* node) {
+		left = node;
+		if (node != nullptr) {
+			node->parent = this;
+		}
+	}
+	void setRight(RedBlackTreeNode* node) {
+		right = node;
+		if (node != nullptr) {
+			node->parent = this;
+		}
+	}
+	void setChild(const bool& isRight, RedBlackTreeNode* node) {
+		if (isRight) {
+			setRight(node);
+		} else {
+			setLeft(node);
+		}
+	}
+	void setSibling(RedBlackTreeNode* node) {
+		if (isRightChild()) {
+			node->getParent()->setLeft(node);
+		} else {
+			node->getParent()->setRight(node);
+		}
+	}
+};
+/**RedBlackTree:
+*      Root and a leaf's (null children) are black
+*      If a node is red, all of its children are black
+*      All paths from a node to its (null children) have the same number of black nodes.
+*/
+template <class K, class V> class RedBlackTree {
+	using Node = RedBlackTreeNode<K,V>;
+
+	Node* root = nullptr;
+	//put the node in this branch. After being called, table is rearranged
+	void put(Node* branch, Node* node) {
+		//chooses which side of the branch to put it on
+		if (branch->key < node->key ) {
+			if (branch->getRight() == nullptr) {
+				branch->setRight(node);
+			} else {
+				put(branch->getRight(), node);
+			}
+		} else {
+			if (branch->getLeft() == nullptr) {
+				branch->setLeft(node);
+			} else {
+				put(branch->getLeft(), node);
+			}
+		}
+	}
+	void printTree(int tabs, Node* node) {
+		indentOut(tabs);
+		if (tabs>6) {
+			cout<<"ERR really big or circular?\n";
+			return;
+		}
+//		cout<<"T"<<tabs<<'\n';
+		cout<<(node->isRed?'R':'B')<<' '<<node->val<<'\n';
+		if (node->getLeft() != nullptr) {
+			indentOut(tabs);cout<<"to left:\n";
+			printTree(tabs + 1, node->getLeft());
+		}
+		if (node->getRight() != nullptr) {
+			indentOut(tabs);cout<<"to right:\n";
+			printTree(tabs + 1, node->getRight());
+		}
+	}
+
+	void leftRotate(Node* node) {
+		Node* nNew = node->getRight();
+		Node* p = node->getParent();
+		// since the leaves of a red-black tree are empty, they cannot become internal nodes
+		assert(nNew != nullptr);
+		node->setRight(nNew->getLeft());
+		nNew->setLeft(node);
+		//if node is not root
+		if (p != nullptr) {
+			if (node==p->getLeft()) p->setLeft(nNew);
+			else if (node==p->getRight()) node->setRight(p);
+		}
+
+	}
+	void rightRotate(Node* node) {
+		Node* nNew = node->getLeft();
+		Node* p = node->getParent();
+		// since the leaves of a red-black tree are empty, they cannot become internal nodes
+		assert(nNew != nullptr);
+		node->setLeft(nNew->getRight());
+		nNew->setRight(node);
+		//if node is not root
+		if (p != nullptr) {
+			if (node==p->getRight()) p->setRight(nNew);
+			else if (node==p->getLeft()) node->setRight(p);
+		}
+	}
+
+
+	/**Preforms sorting algorithms on a node, after it's inserted. Could be called multiple times.
+	 *
+	 * @returns the subtree parent of the violation? todo is this true*/
+	void putFixup(Node *z) {
+		while (z->getParent()->isRed) {
+			bool parentIsRightSide = z->getParent()->isRightChild();
+			Node* y = z->getUncle();
+			if (y!= nullptr && y->isRed) {
+				z->getParent()->isRed = false;
+				y->isRed = false;
+				z->getGrandparent()->isRed = true;
+				z = z->getGrandparent();
+			} else {
+				if (parentIsRightSide == z->isRightChild()) {
+					z=z->getParent();
+					if (parentIsRightSide) {
+						rightRotate(z);
+					} else {
+						leftRotate(z);
+					}
+				}
+				z->getParent()->isRed = false;
+				z->getGrandparent()->isRed = true;
+				if (parentIsRightSide) {
+					leftRotate(z->getGrandparent());
+				} else {
+					rightRotate(z->getGrandparent());
+				}
+			}
+		}
+		root->isRed = false;
+	}
+public:
+	RedBlackTree() = default;
+
+	void put(K k, V v) {
+		//the node to add (default as red)
+		Node* node = new Node(k,v,true);
+
+		//if you are adding the root, make it black
+		if (root == nullptr) {
+			root = node;
+			root->isRed = false;
+			return;
+		}
+
+		//add the non-root node
+		put(root, node);
+
+		printTree("Before sorting (after putting)");
+		putFixup(node);
+
+		printTree("After sorting");
+	}
+	void printTree(const string& info = "") {
+		cout<<"\n----------------------\n"<<info<<'\n';
+		if (root== nullptr) {
+			cout<<"Tree is null\n";
+		} else {
+			printTree(0,root);
+		}
+		cout<<"----------------------\n\n";
+	}
+	bool isEmpty() {
+		return root==nullptr;
+	}
+
+};
+
+//TODO these data structures V
+//todo make a B-Tree that uses files (as that is commonly when it is used)
+
+//where nodes can have fake links to children leading to full iteration in O(n) time rather than O(n * log(n)) time
+class ThreadedBinaryTree {
+
+};
+
+class BTree {
+
+};
+class SplayTree {
+
+};
+class AVLTree {
+
+};
+class KDTree {
 
 };
